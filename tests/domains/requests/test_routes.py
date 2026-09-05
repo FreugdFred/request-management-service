@@ -8,12 +8,14 @@ from src.domains.requests.command_repository import CommandRequestsRepository
 from src.domains.requests.entity import RequestEntity
 from src.domains.requests.enums import RequestStatus
 from src.domains.requests.routes import request_router
+from src.exception_handlers import register_exception_handlers
 
 
 @pytest.fixture
 def client() -> TestClient:
     app = FastAPI()
     app.include_router(request_router)
+    register_exception_handlers(app)
     return TestClient(app)
 
 
@@ -64,6 +66,33 @@ async def test_save_route_creates_request(
     assert request is not None
     assert request.type == "LEAVE"
     assert request.data == {"days": 2}
+
+
+async def test_save_route_rejects_status_change_after_decision(
+    client: TestClient,
+    command_requests_repository: CommandRequestsRepository,
+) -> None:
+    request = RequestEntity(
+        id=uuid4(),
+        type="LEAVE",
+        status=RequestStatus.APPROVED,
+        data={},
+        created_by_id="employee-1",
+    )
+    await command_requests_repository.save(request)
+
+    response = client.post(
+        "/request/save",
+        json={"id": str(request.id), "status": "REJECTED"},
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json() == {
+        "detail": "The requested state change is not allowed."
+    }
+    saved_request = await command_requests_repository.get(request.id)
+    assert saved_request is not None
+    assert saved_request.status is RequestStatus.APPROVED
 
 
 async def test_request_query_routes_return_expected_shapes(

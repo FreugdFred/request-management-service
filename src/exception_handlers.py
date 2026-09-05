@@ -1,7 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from src.exceptions import NotFoundException, ValidationException
+from src.exceptions import (
+    NotFoundException,
+    ValidationException,
+)
+from domains.requests.exceptions import InvalidStateChangeException
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -22,5 +26,15 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": str(exception)},
+        )
+
+    @app.exception_handler(InvalidStateChangeException)
+    async def handle_invalid_state_change(
+        _request: Request,
+        exception: InvalidStateChangeException,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
             content={"detail": str(exception)},
         )

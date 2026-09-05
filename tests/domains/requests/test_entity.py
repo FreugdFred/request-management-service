@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import pytest
+
 from src.domains.requests.entity import RequestEntity
 from src.domains.requests.enums import RequestStatus
 from src.domains.requests.events import (
@@ -13,6 +15,7 @@ from src.domains.requests.events import (
     RequestStatusChangedEvent,
     RequestTypeChangedEvent,
 )
+from domains.requests.exceptions import InvalidStateChangeException
 
 NOW = datetime(2026, 9, 2, 12, tzinfo=UTC)
 
@@ -125,6 +128,53 @@ def test_unchanged_values_do_not_record_events() -> None:
     request.set_created_by_id("employee-1")
     request.set_reviewed_by_id(None)
 
+    assert request.pull_events() == ()
+
+
+@pytest.mark.parametrize(
+    ("current_status", "new_status"),
+    [
+        (RequestStatus.APPROVED, RequestStatus.PENDING),
+        (RequestStatus.APPROVED, RequestStatus.REJECTED),
+        (RequestStatus.REJECTED, RequestStatus.PENDING),
+        (RequestStatus.REJECTED, RequestStatus.APPROVED),
+    ],
+)
+def test_decided_request_status_cannot_be_changed(
+    current_status: RequestStatus,
+    new_status: RequestStatus,
+) -> None:
+    request = RequestEntity(
+        id=uuid4(),
+        type="SHIFT_CORRECTION",
+        status=current_status,
+        data={},
+        created_by_id="employee-1",
+    )
+
+    with pytest.raises(InvalidStateChangeException):
+        request.set_status(new_status)
+
+    assert request.status is current_status
+    assert request.pull_events() == ()
+
+
+@pytest.mark.parametrize(
+    "status",
+    [RequestStatus.APPROVED, RequestStatus.REJECTED],
+)
+def test_reapplying_decided_status_is_a_no_op(status: RequestStatus) -> None:
+    request = RequestEntity(
+        id=uuid4(),
+        type="SHIFT_CORRECTION",
+        status=status,
+        data={},
+        created_by_id="employee-1",
+    )
+
+    request.set_status(status)
+
+    assert request.status is status
     assert request.pull_events() == ()
 
 

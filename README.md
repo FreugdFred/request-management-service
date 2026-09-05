@@ -62,6 +62,12 @@ The endpoint is an upsert. Creating a request requires `id`, `type`, `status`,
 and `created_by_id`. On an update, omitted fields remain unchanged; send
 `note: null` or `reviewed_by_id: null` to clear those nullable values.
 
+A `PENDING` request can be changed to `APPROVED` or `REJECTED`. Both decisions
+are terminal: after a request is approved or rejected, its status cannot be
+changed to another value. An attempted status change on a decided request
+returns HTTP 409 Conflict and leaves the stored request unchanged. Sending the
+same status again is an idempotent no-op.
+
 ```console
 curl -X POST "http://localhost:8000/request/save" \
   -H "Content-Type: application/json" \

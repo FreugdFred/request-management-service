@@ -16,6 +16,7 @@ from src.domains.requests.events import (
     RequestStatusChangedEvent,
     RequestTypeChangedEvent,
 )
+from domains.requests.exceptions import InvalidStateChangeException
 
 
 class Request(BaseModel):
@@ -116,6 +117,9 @@ class RequestEntity(Request):
     def set_status(self, status: RequestStatus) -> None:
         if status == self.status:
             return
+
+        if self.status != RequestStatus.PENDING:
+            raise InvalidStateChangeException()
 
         previous_status = self.status
         self.status = status
