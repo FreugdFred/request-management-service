@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from src.core.base import import_all_database_models
 from src.core.di import include_nats_dependency
 from src.core.settings import Settings
+from src.jobs.configure_scheduler import scheduler
 
 
 @asynccontextmanager
@@ -18,6 +19,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = Dependency.get(Settings)
     nats_client = await include_nats_dependency(settings)
 
+    scheduler.start()
     logger.info("Application startup completed")
 
     try:
@@ -25,6 +27,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     finally:
         logger.info("Application shutdown started")
+        scheduler.shutdown(wait=True)
 
         if nats_client is not None:
             await nats_client.drain()

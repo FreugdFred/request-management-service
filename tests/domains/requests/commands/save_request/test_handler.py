@@ -3,6 +3,7 @@ from uuid import uuid4
 import pytest
 from dependency_container import Dependency
 
+from src.core.unit_of_work import UnitOfWork
 from src.domains.requests.command_repository import CommandRequestsRepository
 from src.domains.requests.commands.save_request.command import SaveRequestCommand
 from src.domains.requests.commands.save_request.handlers import (
@@ -29,7 +30,8 @@ async def test_create_requires_complete_request(
             SaveRequestCommand(id=request_id)
         )
 
-    assert await command_requests_repository.get(request_id) is None
+    async with UnitOfWork() as session:
+        assert await command_requests_repository.get(session, request_id) is None
 
 
 async def test_create_persists_complete_request(
@@ -47,7 +49,8 @@ async def test_create_persists_complete_request(
         )
     )
 
-    saved_request = await command_requests_repository.get(request_id)
+    async with UnitOfWork() as session:
+        saved_request = await command_requests_repository.get(session, request_id)
     assert saved_request is not None
     assert saved_request.note == "Correct my shift"
     assert saved_request.type == "SHIFT_CORRECTION"
@@ -69,7 +72,8 @@ async def test_update_applies_empty_and_explicitly_cleared_values(
         created_by_id="employee-1",
         reviewed_by_id="manager-1",
     )
-    await command_requests_repository.save(request)
+    async with UnitOfWork() as session:
+        await command_requests_repository.save(session, request)
 
     await Dependency.get(SaveRequestCommandHandler).handle(
         SaveRequestCommand(
@@ -83,7 +87,8 @@ async def test_update_applies_empty_and_explicitly_cleared_values(
         )
     )
 
-    saved_request = await command_requests_repository.get(request.id)
+    async with UnitOfWork() as session:
+        saved_request = await command_requests_repository.get(session, request.id)
     assert saved_request is not None
     assert saved_request.note is None
     assert saved_request.type == "PAUSE_CORRECTION"

@@ -77,8 +77,7 @@ Do not add abstractions until there is a concrete use for them.
 Current query use cases are:
 
 - get a request by UUID;
-- list requests created by an actor;
-- list requests reviewed by an actor; and
+- list requests with optional creator, reviewer, status, and type filters; and
 - return distinct request types.
 
 Paginated queries return `items`, `total`, `limit`, and `offset`. Use
@@ -162,14 +161,17 @@ Current endpoints are:
 - `POST /request/save`
 - `DELETE /request/remove?id={request_id}`
 - `GET /request/{request_id}`
-- `GET /request/created-by/{created_by_id}`
-- `GET /request/reviewed-by/{reviewed_by_id}`
+- `GET /request`
 - `GET /request/types`
 - `GET /health`
 
+`GET /request` accepts optional `created_by_id` and `reviewed_by_id` query
+parameters. Omit both to list all requests; supply both to require both to
+match. Status, type, sorting, and pagination remain available.
+
 Use Pydantic schemas for bodies and filter groups. Keep fixed paths such as
-`/types`, `/created-by/...`, and `/reviewed-by/...` before the dynamic `/{id}`
-route. Response models expose only intended API fields.
+`/types` before the dynamic `/{id}` route. Response models expose only intended
+API fields.
 
 ## Dependency injection
 

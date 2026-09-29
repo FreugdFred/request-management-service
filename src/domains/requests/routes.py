@@ -20,24 +20,13 @@ from src.domains.requests.queries.get_request_types.handler import (
     GetRequestTypesQueryHandler,
 )
 from src.domains.requests.queries.get_request_types.query import GetRequestTypesQuery
-from src.domains.requests.queries.get_requests_created_by.handler import (
-    GetRequestsCreatedByQueryHandler,
-)
-from src.domains.requests.queries.get_requests_created_by.query import (
-    GetRequestsCreatedByQuery,
-)
-from src.domains.requests.queries.get_requests_reviewed_by.handler import (
-    GetRequestsReviewedByQueryHandler,
-)
-from src.domains.requests.queries.get_requests_reviewed_by.query import (
-    GetRequestsReviewedByQuery,
-)
+from src.domains.requests.queries.get_requests.handler import GetRequestsQueryHandler
+from src.domains.requests.queries.get_requests.query import GetRequestsQuery
 from src.domains.requests.query_models import PaginatedQueryModel, RequestQueryModel
 from src.domains.requests.schemas import (
-    CreatedRequestsFiltersInput,
     PaginationInput,
+    RequestsFiltersInput,
     RequestTypesFiltersInput,
-    ReviewedRequestsFiltersInput,
     SaveRequestInput,
 )
 
@@ -71,45 +60,18 @@ async def get_request_types(
     )
 
 
-@request_router.get(
-    "/created-by/{created_by_id}",
-    response_model=PaginatedQueryModel[RequestQueryModel],
-)
-async def get_requests_created_by(
-    created_by_id: str,
-    filters: Annotated[CreatedRequestsFiltersInput, Depends()],
+@request_router.get("", response_model=PaginatedQueryModel[RequestQueryModel])
+async def get_requests(
+    filters: Annotated[RequestsFiltersInput, Depends()],
     pagination: Annotated[PaginationInput, Depends()],
 ) -> PaginatedQueryModel[RequestQueryModel]:
-    handler = Dependency.get(GetRequestsCreatedByQueryHandler)
+    handler = Dependency.get(GetRequestsQueryHandler)
     return await handler.handle(
-        GetRequestsCreatedByQuery(
-            created_by_id=created_by_id,
-            status=filters.status,
-            type=filters.type,
-            reviewed_by_id=filters.reviewed_by_id,
-            sort_direction=filters.sort_direction,
-            limit=pagination.limit,
-            offset=pagination.offset,
-        )
-    )
-
-
-@request_router.get(
-    "/reviewed-by/{reviewed_by_id}",
-    response_model=PaginatedQueryModel[RequestQueryModel],
-)
-async def get_requests_reviewed_by(
-    reviewed_by_id: str,
-    filters: Annotated[ReviewedRequestsFiltersInput, Depends()],
-    pagination: Annotated[PaginationInput, Depends()],
-) -> PaginatedQueryModel[RequestQueryModel]:
-    handler = Dependency.get(GetRequestsReviewedByQueryHandler)
-    return await handler.handle(
-        GetRequestsReviewedByQuery(
-            reviewed_by_id=reviewed_by_id,
-            status=filters.status,
-            type=filters.type,
+        GetRequestsQuery(
             created_by_id=filters.created_by_id,
+            reviewed_by_id=filters.reviewed_by_id,
+            status=filters.status,
+            type=filters.type,
             sort_direction=filters.sort_direction,
             limit=pagination.limit,
             offset=pagination.offset,

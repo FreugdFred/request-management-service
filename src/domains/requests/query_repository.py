@@ -21,54 +21,47 @@ class QueryRequestsRepository:
 
             return RequestQueryModel.model_validate(db_request)
 
-    async def get_created_by(
+    async def get_many(
         self,
-        created_by_id: str,
         *,
-        status: RequestStatus | None = None,
-        type: str | None = None,
-        reviewed_by_id: str | None = None,
-        sort_direction: Literal["asc", "desc"] = "desc",
-        limit: int,
-        offset: int,
-    ) -> PaginatedQueryModel[RequestQueryModel]:
-        filters = [DbRequest.created_by_id == created_by_id]
-        if status is not None:
-            filters.append(DbRequest.status == status)
-        if type is not None:
-            filters.append(DbRequest.type == type)
-        if reviewed_by_id is not None:
-            filters.append(DbRequest.reviewed_by_id == reviewed_by_id)
-
-        return await self._get_many(
-            filters=filters,
-            sort_direction=sort_direction,
-            limit=limit,
-            offset=offset,
-        )
-
-    async def get_reviewed_by(
-        self,
-        reviewed_by_id: str,
-        *,
-        status: RequestStatus | None = None,
-        type: str | None = None,
         created_by_id: str | None = None,
+        reviewed_by_id: str | None = None,
+        status: RequestStatus | None = None,
+        type: str | None = None,
         sort_direction: Literal["asc", "desc"] = "desc",
         limit: int,
         offset: int,
     ) -> PaginatedQueryModel[RequestQueryModel]:
-        filters = [DbRequest.reviewed_by_id == reviewed_by_id]
-        if status is not None:
-            filters.append(DbRequest.status == status)
-        if type is not None:
-            filters.append(DbRequest.type == type)
+        filters: list[ColumnElement[bool]] = []
         if created_by_id is not None:
             filters.append(DbRequest.created_by_id == created_by_id)
+        if reviewed_by_id is not None:
+            filters.append(DbRequest.reviewed_by_id == reviewed_by_id)
+        if status is not None:
+            filters.append(DbRequest.status == status)
+        if type is not None:
+            filters.append(DbRequest.type == type)
 
-        return await self._get_many(
-            filters=filters,
-            sort_direction=sort_direction,
+        order = asc if sort_direction == "asc" else desc
+        query = (
+            select(DbRequest)
+            .where(*filters)
+            .order_by(order(DbRequest.created_at), order(DbRequest.id))
+            .limit(limit)
+            .offset(offset)
+        )
+        count_query = select(func.count(DbRequest.id)).where(*filters)
+
+        async with Dependency.get(AsyncSession) as session:
+            total = await session.scalar(count_query)
+            result = await session.scalars(query)
+            items = [
+                RequestQueryModel.model_validate(request) for request in result.all()
+            ]
+
+        return PaginatedQueryModel[RequestQueryModel](
+            items=items,
+            total=total or 0,
             limit=limit,
             offset=offset,
         )
@@ -98,36 +91,3 @@ class QueryRequestsRepository:
         async with Dependency.get(AsyncSession) as session:
             result = await session.scalars(query)
             return list(result.all())
-
-    async def _get_many(
-        self,
-        *,
-        filters: list[ColumnElement[bool]],
-        sort_direction: Literal["asc", "desc"],
-        limit: int,
-        offset: int,
-    ) -> PaginatedQueryModel[RequestQueryModel]:
-        order = asc if sort_direction == "asc" else desc
-        query = (
-            select(DbRequest)
-            .where(*filters)
-            .order_by(order(DbRequest.created_at), order(DbRequest.id))
-            .limit(limit)
-            .offset(offset)
-        )
-        count_query = select(func.count(DbRequest.id)).where(*filters)
-
-        async with Dependency.get(AsyncSession) as session:
-            total = await session.scalar(count_query)
-            result = await session.scalars(query)
-            items = [
-                RequestQueryModel.model_validate(request)
-                for request in result.all()
-            ]
-
-        return PaginatedQueryModel[RequestQueryModel](
-            items=items,
-            total=total or 0,
-            limit=limit,
-            offset=offset,
-        )
