@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
+from src.domains.requests.exceptions import InvalidStateChangeException
 from src.exceptions import (
     NotFoundException,
     ValidationException,
 )
-from domains.requests.exceptions import InvalidStateChangeException
 
 
 def register_exception_handlers(app: FastAPI) -> None:

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import AnyUrl, NatsDsn
+from pydantic import AnyUrl, NatsDsn, PositiveInt
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     API_KEY: str | None = None
+    EVENT_RETENTION_MINUTES: PositiveInt = 10
     LOCAL_TIMEZONE: str = "Europe/Amsterdam"
 
     DATABASE_URL: AnyUrl

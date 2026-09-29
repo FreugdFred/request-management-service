@@ -1,5 +1,5 @@
-
 from src.core.handler_base import HandlerBase
+from src.core.unit_of_work import UnitOfWork
 from src.domains.requests.command_repository import CommandRequestsRepository
 from src.domains.requests.commands.save_request.command import SaveRequestCommand
 from src.domains.requests.entity import RequestEntity
@@ -11,15 +11,16 @@ class SaveRequestCommandHandler(HandlerBase):
         self._requests_repository = requests_repository
 
     async def handle(self, command: SaveRequestCommand) -> None:
-        existing_request = await self._requests_repository.get(command.id)
+        async with UnitOfWork() as session:
+            existing_request = await self._requests_repository.get(session, command.id)
 
-        if existing_request is None:
-            request = self._create_entity(command)
-        else:
-            request = self._update_entity(existing_request, command)
+            if existing_request is None:
+                request = self._create_entity(command)
+            else:
+                request = self._update_entity(existing_request, command)
 
-        await self._requests_repository.save(request)
-        await self.publish_events(request.pull_events())
+            await self._requests_repository.save(session, request)
+            await self.save_events(session, request.pull_events())
 
     @staticmethod
     def _create_entity(command: SaveRequestCommand) -> RequestEntity:
@@ -75,5 +76,3 @@ class SaveRequestCommandHandler(HandlerBase):
             request.set_reviewed_by_id(command.reviewed_by_id)
 
         return request
-
-

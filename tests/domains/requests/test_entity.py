@@ -15,7 +15,7 @@ from src.domains.requests.events import (
     RequestStatusChangedEvent,
     RequestTypeChangedEvent,
 )
-from domains.requests.exceptions import InvalidStateChangeException
+from src.domains.requests.exceptions import InvalidStateChangeException
 
 NOW = datetime(2026, 9, 2, 12, tzinfo=UTC)
 

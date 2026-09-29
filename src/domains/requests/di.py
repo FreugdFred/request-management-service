@@ -13,12 +13,7 @@ from src.domains.requests.queries.get_request_by_id.handler import (
 from src.domains.requests.queries.get_request_types.handler import (
     GetRequestTypesQueryHandler,
 )
-from src.domains.requests.queries.get_requests_created_by.handler import (
-    GetRequestsCreatedByQueryHandler,
-)
-from src.domains.requests.queries.get_requests_reviewed_by.handler import (
-    GetRequestsReviewedByQueryHandler,
-)
+from src.domains.requests.queries.get_requests.handler import GetRequestsQueryHandler
 from src.domains.requests.query_repository import QueryRequestsRepository
 
 
@@ -29,11 +24,4 @@ def include_request_dependencies() -> None:
     Dependency.register(SaveRequestCommandHandler, SaveRequestCommandHandler)
     Dependency.register(GetRequestByIdQueryHandler, GetRequestByIdQueryHandler)
     Dependency.register(GetRequestTypesQueryHandler, GetRequestTypesQueryHandler)
-    Dependency.register(
-        GetRequestsCreatedByQueryHandler,
-        GetRequestsCreatedByQueryHandler,
-    )
-    Dependency.register(
-        GetRequestsReviewedByQueryHandler,
-        GetRequestsReviewedByQueryHandler,
-    )
+    Dependency.register(GetRequestsQueryHandler, GetRequestsQueryHandler)

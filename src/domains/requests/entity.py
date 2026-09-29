@@ -16,7 +16,7 @@ from src.domains.requests.events import (
     RequestStatusChangedEvent,
     RequestTypeChangedEvent,
 )
-from domains.requests.exceptions import InvalidStateChangeException
+from src.domains.requests.exceptions import InvalidStateChangeException
 
 
 class Request(BaseModel):

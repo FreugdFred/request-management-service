@@ -3,6 +3,7 @@ from uuid import uuid4
 import pytest
 from dependency_container import Dependency
 
+from src.core.unit_of_work import UnitOfWork
 from src.domains.requests.command_repository import CommandRequestsRepository
 from src.domains.requests.entity import RequestEntity
 from src.domains.requests.enums import RequestStatus
@@ -24,7 +25,8 @@ async def test_get_request_by_id_returns_request(
         data={"shift_id": "shift-1"},
         created_by_id="employee-1",
     )
-    await command_requests_repository.save(request)
+    async with UnitOfWork() as session:
+        await command_requests_repository.save(session, request)
 
     handler = Dependency.get(GetRequestByIdQueryHandler)
     result = await handler.handle(GetRequestByIdQuery(id=request.id))
